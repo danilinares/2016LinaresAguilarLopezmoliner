@@ -18,5 +18,18 @@ dat <- dat %>%
   mutate(orLarge = orLarge %>% 
         recode(`0` = 'Top', `90` = 'Right', `180` = 'Bottom', `270` = 'Left'))
 
-datcomp <- dat %>% filter(task == 'comp')
-datequ <- dat %>% filter(task == 'equ')
+datsym <- dat %>% filter(task == 'comp')
+datasym <- dat %>% filter(task == 'equ')
+
+### sym preliminary ############################################################
+fitsym <- quickpsy(datsym, orSmall, response,
+                    grouping = .(subject, orLarge),
+                    guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
+                    parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
+                    bootstrap = 'none')
+
+fitsym %>% plot(xpanel = subject, ypanel = orLarge)
+
+dat <- dat %>% filter(!subject %in% 12:15) #problems with 12, 13, 14, 15
+
+

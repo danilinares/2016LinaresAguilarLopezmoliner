@@ -1,5 +1,10 @@
 library(tidyverse)
 library(quickpsy)
+library(grid)
+library(gridExtra)
+library(R.utils)
+sourceDirectory('R')
+source('graphical_parameters.R')
 
 ### read and prepare the data ##################################################
 dat <- read_csv('data/exp1.csv')
@@ -18,11 +23,8 @@ dat <- dat %>%
   mutate(orLarge = orLarge %>% 
         recode(`0` = 'Top', `90` = 'Right', `180` = 'Bottom', `270` = 'Left'))
 
-datsym <- dat %>% filter(task == 'comp')
-datasym <- dat %>% filter(task == 'equ')
-
 ### sym preliminary ############################################################
-fitsym <- quickpsy(datsym, orSmall, response,
+fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
                     grouping = .(subject, orLarge),
                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
@@ -30,6 +32,23 @@ fitsym <- quickpsy(datsym, orSmall, response,
 
 fitsym %>% plot(xpanel = subject, ypanel = orLarge)
 
-dat <- dat %>% filter(!subject %in% 12:15) #problems with 12, 13, 14, 15
+dat <- dat %>% filter(!subject %in% 12:15) #eliminating subj with problems
+
+### sym  #######################################################################
+fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
+                    grouping = .(subject, orLarge, vertical),
+                    guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
+                    parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
+                    bootstrap = 'nonparametric',
+                    B = 20)
+
+setting_theme()
+plotsym0 <- plotting_sym(fitsym, TRUE, FALSE)
+plotsym90 <- plotting_sym(fitsym, FALSE, TRUE)
+
+psym <- plot_grid(plotsym0, plotsym90, labels = c('A', 'B'), ncol = 1, 
+                  hjust = 0, vjust = 1)
+save_plot('figures/sym.pdf', psym, base_width = one_column_width,
+          base_height = 1.75 * one_column_width)
 
 

@@ -1,0 +1,36 @@
+plotting_sym <- function(d, flagVertical, flagOrder) {
+  ### choice bias prediction
+  choicebiascurves <- d$curves %>%
+    filter(orLarge=='Top' | orLarge=='Right' ) %>%
+    merge(d$par %>% filter(parn == 'p1')) %>%
+    mutate(x = x - 2*par) 
+  
+  colorcurves1 <- ifelse(flagVertical,'#e41a1c','#4daf4a')
+  colorcurves2 <- ifelse(flagVertical,'#377eb8','#984ea3')
+  colorchoicebiascurves <- ifelse(flagVertical,'#377eb8','#984ea3')
+  ggplot(d$averages %>% filter(vertical==flagVertical),
+         aes(x = orSmall, y = prob, color = orLarge, shape=orLarge)) +
+    facet_wrap(~subject,scales = 'free_x') +
+    geom_vline(xintercept = 0, lty = 2, size  = size_line)+
+    geom_point(size = size_point) +
+    geom_line(data = d$curves %>% filter(vertical==flagVertical),
+              aes(x = x, y = y), size  = size_line) +
+    geom_line(data = choicebiascurves %>% filter(vertical==flagVertical),
+              aes(x = x, y = y), lty =2, size  = size_line, 
+              color = colorchoicebiascurves) +
+    geom_segment(data = d$thresholds %>%
+                   filter(vertical==flagVertical),
+                 aes(x=threinf,xend = thresup, y = .5, yend = 0.5,
+                     color=orLarge), size  = size_line) +
+    scale_color_manual(values = c(colorcurves1,colorcurves2)) +
+    guides(color = guide_legend(reverse=flagOrder),
+           shape = guide_legend(reverse=flagOrder)) +
+    labs(x = text_orientation, y = text_prob_sym,
+         color = text_reference, shape = text_reference) +
+    scale_y_continuous(breaks = c(0,.5,1)) +
+    coord_cartesian(xlim=c(-2.1, 2.1),ylim=c(0,1)) +
+    theme(legend.position = c(.9,.07),
+          strip.background = element_blank())
+  
+}
+

@@ -30,7 +30,9 @@ plotting_sym <- function(d, flagVertical, flagOrder) {
     scale_y_continuous(breaks = c(0,.5,1)) +
     coord_cartesian(xlim=c(-2.1, 2.1),ylim=c(0,1)) +
     theme(legend.position = c(.9,.07),
-          strip.background = element_blank())
+          strip.background = element_blank(),
+          axis.line = element_line(size = size_line),
+          axis.ticks= element_line(size = size_line))
   
 }
 

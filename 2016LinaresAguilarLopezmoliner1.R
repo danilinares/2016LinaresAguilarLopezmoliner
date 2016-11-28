@@ -21,7 +21,7 @@ dat <- dat %>%
 
 dat <- dat %>% 
   mutate(orLarge = orLarge %>% 
-        recode(`0` = 'Top', `90` = 'Right', `180` = 'Bottom', `270` = 'Left'))
+         recode(`0` = 'Top', `90` = 'Right', `180` = 'Bottom', `270` = 'Left'))
 
 ### sym preliminary ############################################################
 fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
@@ -42,8 +42,9 @@ fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
                     bootstrap = 'nonparametric',
                     B = 20)
 
-setting_theme()
-plotsym0 <- plotting_sym(fitsym, TRUE, FALSE)
+### psychometric functions 
+theme_set(theme_classic(10))
+plotsym0 <- plotting_sym(fitsym, TRUE, FALSE) 
 plotsym90 <- plotting_sym(fitsym, FALSE, TRUE)
 
 psym <- plot_grid(plotsym0, plotsym90, labels = c('A', 'B'), ncol = 1, 
@@ -51,4 +52,4 @@ psym <- plot_grid(plotsym0, plotsym90, labels = c('A', 'B'), ncol = 1,
 save_plot('figures/sym.pdf', psym, base_width = one_column_width,
           base_height = 1.75 * one_column_width)
 
-
+### correlation

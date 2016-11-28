@@ -35,12 +35,15 @@ fitsym %>% plot(xpanel = subject, ypanel = orLarge)
 dat <- dat %>% filter(!subject %in% 12:15) #eliminating subj with problems
 
 ### sym  #######################################################################
-fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
-                    grouping = .(subject, orLarge, vertical),
-                    guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
-                    parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
-                    bootstrap = 'nonparametric',
-                    B = 20)
+# fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
+#                     grouping = .(subject, orLarge, vertical),
+#                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
+#                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
+#                     bootstrap = 'nonparametric',
+#                     B = 500)
+# save(fitsym, file = 'fitsym.RData')
+# load('fitsym.RData')
+
 
 ### psychometric functions 
 theme_set(theme_classic(10))
@@ -53,3 +56,9 @@ save_plot('figures/sym.pdf', psym, base_width = one_column_width,
           base_height = 1.75 * one_column_width)
 
 ### correlation
+thresholds <-fitsym$thresholds %>% select(-vertical) %>% 
+  gather(key = thre_cond, value =  threshold, thre, threinf, thresup) %>% 
+  group_by(thre_cond) %>% spread(orLarge, threshold)
+
+plotting_corr(thresholds)
+

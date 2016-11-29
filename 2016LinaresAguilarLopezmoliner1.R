@@ -62,3 +62,13 @@ thresholds <-fitsym$thresholds %>% select(-vertical) %>%
 
 plotting_corr(thresholds)
 
+### biases 
+
+psymbias <- ggplot(fitsym$thresholds) + 
+  facet_wrap(~vertical, ncol = 1, as.table = F) +
+  geom_col(aes(x = subject, y = thre, fill = factor(orLarge)), 
+           position = position_dodge(.9)) +
+  geom_linerange(aes(x = subject, ymin = threinf, ymax = thresup, group = orLarge), 
+   position = position_dodge(.9))
+psymbias
+

@@ -1,6 +1,8 @@
 library(tidyverse)
 library(quickpsy)
 library(cowplot)
+library(purrr)
+library(broom)
 library(R.utils)
 sourceDirectory('R')
 source('graphical_parameters.R')
@@ -61,18 +63,78 @@ thresholds <-fitsym$thresholds %>% select(-vertical) %>%
   gather(key = thre_cond, value =  threshold, thre, threinf, thresup) %>% 
   group_by(thre_cond) %>% spread(orLarge, threshold)
 
-plotting_corr(thresholds)
+pcor <- plotting_corr(thresholds)
+save_plot('figures/corr.pdf', pcor, base_width = one_half_column_width,
+          base_height = one_column_width)
 
 ### biases 
-thre_long <- fitsym$thresholds %>% mutate(pred = FALSE) 
+thre_long <- fitsym$thresholds 
 
-plotbar0 <- plotting_bars(thre_long, TRUE)
-plotbar90 <- plotting_bars(thre_long, FALSE)
+plotbar0 <- plotting_bars(thre_long, TRUE, FALSE)
+plotbar90 <- plotting_bars(thre_long, FALSE, FALSE)
 
 pbar <- plot_grid(plotbar0, plotbar90, labels = c('A', 'B'), ncol = 1, 
                   hjust = 0, vjust = 1)
 save_plot('figures/biases.pdf', pbar, base_width = one_half_column_width,
           base_height = 1.5 * one_column_width)
+
+
+### absolute biases 
+thre_long_abs <- thre_long %>% # un poco cutre, manera mas elegante ?
+  group_by(subject, vertical) %>% 
+  do({
+    if('Top' %in% .$orLarge) {
+      if (.$thre[.$orLarge == 'Top'] < 0) k <- -1
+      else k <- 1
+    }
+    if('Right' %in% .$orLarge) {
+      if (.$thre[.$orLarge == 'Right'] < 0) k <- -1
+      else k <- 1
+    }
+    .$thre <- k * .$thre
+    .$threinf <- k * .$threinf
+    .$thresup <- k * .$thresup
+
+    return(.)
+  }) %>% 
+  ungroup()
+
+plotbarabs0 <- plotting_bars(thre_long_abs, TRUE, FALSE)
+plotbarabs90 <- plotting_bars(thre_long_abs, FALSE, FALSE)
+
+pbarabs <- plot_grid(plotbarabs0, plotbarabs90, labels = c('A', 'B'), ncol = 1, 
+                  hjust = 0, vjust = 1)
+save_plot('figures/biasesabs.pdf', pbarabs, base_width = one_half_column_width,
+          base_height = 1.5 * one_column_width)
+
+### absolute biases across subjects
+thre_long_abs_av <- thre_long_abs %>% 
+  group_by(orLarge, vertical) %>% 
+  summarise(model = list(t.test(thre))) %>% 
+  mutate(tidy = map(model, tidy)) %>% 
+  unnest(tidy, .drop = TRUE) %>% 
+  rename(thre = estimate, threinf = conf.low, thresup = conf.high) %>% 
+  ungroup() %>% 
+  mutate(subject = 'All participants')
+
+plotbarabsav0 <- plotting_bars(thre_long_abs_av, TRUE, TRUE)
+plotbarabsav90 <- plotting_bars(thre_long_abs_av, FALSE, TRUE)
+
+pbarabsav <- plot_grid(plotbarabsav0, plotbarabsav90, labels = c('A', 'B'),  
+                      hjust = 0, vjust = 1)
+save_plot('figures/biasesabsav.pdf', pbarabsav, base_width = one_half_column_width,
+          base_height = 1 * one_column_width)
+
+
+verttop <- thre_long_abs %>% filter(vertical, orLarge == 'Top')
+vertbot <- thre_long_abs %>% filter(vertical, orLarge == 'Bottom')
+t.test(verttop$thre, vertbot$thre, paired = TRUE)
+
+horrig <- thre_long_abs %>% filter(!vertical, orLarge == 'Right')
+horlef <- thre_long_abs %>% filter(!vertical, orLarge == 'Left')
+t.test(horrig$thre, horlef$thre, paired = TRUE)
+
+
 
 ### sym  times #################################################################
 ggplot(dat, aes(x = rt)) + facet_wrap(~subject, scales = 'free') +

@@ -1,5 +1,5 @@
-plotting_bars <- function(d, flagVertical) {
-  
+plotting_bars <- function(d, flagVertical, flagAverage) {
+  d <- d %>% mutate(pred = FALSE) 
   thre_long_pred_bottom_pred <- d %>% filter(orLarge == 'Top') %>% 
     mutate(orLarge = 'Bottom prediction', 
            thre = -thre, threinf = -threinf, thresup = -thresup, pred = TRUE)
@@ -18,6 +18,8 @@ plotting_bars <- function(d, flagVertical) {
   fillbar2 <- ifelse(flagVertical,'#377eb8','#984ea3')
   fillbar3 <- 'white'
   
+  if (flagAverage) legend_dir <- 'vertical'
+  else legend_dir <- 'horizontal'
   psymbias <- ggplot(d %>% filter(vertical == flagVertical)) + 
     geom_col(aes(x = subject, y = thre, fill = orLarge, color = orLarge), 
              width=0.7, position = position_dodge(0.75)) +
@@ -27,9 +29,11 @@ plotting_bars <- function(d, flagVertical) {
     scale_fill_manual(values = c(fillbar2, fillbar1, fillbar3)) +
     scale_color_manual(values = c(fillbar2, fillbar1, fillbar1)) +
     guides(lty = FALSE) +
+    ylim(-1.27, 1.27) +
     labs(x = 'Participant',y = 'PND (deg)', 
          color = text_reference, fill = text_reference) +
     theme(legend.position = 'top',
+          legend.direction = legend_dir,
           axis.line = element_line(size = size_line),
           axis.ticks= element_line(size = size_line))
   

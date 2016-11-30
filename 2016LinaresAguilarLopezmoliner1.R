@@ -64,13 +64,15 @@ thresholds <-fitsym$thresholds %>% select(-vertical) %>%
 plotting_corr(thresholds)
 
 ### biases 
-psymbias <- ggplot(fitsym$thresholds) + 
-  facet_wrap(~vertical, ncol = 1, as.table = F) +
-  geom_col(aes(x = subject, y = thre, fill = factor(orLarge)), 
-           position = position_dodge(.9)) +
-  geom_linerange(aes(x = subject, ymin = threinf, ymax = thresup, group = orLarge), 
-   position = position_dodge(.9))
-psymbias
+thre_long <- fitsym$thresholds %>% mutate(pred = FALSE) 
+
+plotbar0 <- plotting_bars(thre_long, TRUE)
+plotbar90 <- plotting_bars(thre_long, FALSE)
+
+pbar <- plot_grid(plotbar0, plotbar90, labels = c('A', 'B'), ncol = 1, 
+                  hjust = 0, vjust = 1)
+save_plot('figures/biases.pdf', pbar, base_width = one_half_column_width,
+          base_height = 1.5 * one_column_width)
 
 ### sym  times #################################################################
 ggplot(dat, aes(x = rt)) + facet_wrap(~subject, scales = 'free') +

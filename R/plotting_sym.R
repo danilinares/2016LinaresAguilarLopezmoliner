@@ -7,7 +7,7 @@ plotting_sym <- function(d, flagVertical, flagOrder) {
   
   colorcurves1 <- ifelse(flagVertical,'#e41a1c','#4daf4a')
   colorcurves2 <- ifelse(flagVertical,'#377eb8','#984ea3')
-  colorchoicebiascurves <- ifelse(flagVertical,'#377eb8','#984ea3')
+  colorchoicebiascurves <- ifelse(flagVertical,'#e41a1c','#4daf4a')
   ggplot(d$averages %>% filter(vertical==flagVertical),
          aes(x = orSmall, y = prob, color = orLarge, shape=orLarge)) +
     facet_wrap(~subject,scales = 'free_x', ncol = 4) +
@@ -22,7 +22,7 @@ plotting_sym <- function(d, flagVertical, flagOrder) {
                    filter(vertical==flagVertical),
                  aes(x=threinf,xend = thresup, y = .5, yend = 0.5,
                      color=orLarge), size  = size_line) +
-    scale_color_manual(values = c(colorcurves1,colorcurves2)) +
+    scale_color_manual(values = c(colorcurves1, colorcurves2)) +
     guides(color = guide_legend(reverse=flagOrder),
            shape = guide_legend(reverse=flagOrder)) +
     labs(x = text_orientation, y = text_prob_sym,

@@ -32,17 +32,17 @@ fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
 
 fitsym %>% plot(xpanel = subject, ypanel = orLarge)
 
-dat <- dat %>% filter(!subject %in% 12:15) #eliminating subj with problems
+dat <- dat %>% filter(!subject %in% 18:21) #eliminating subj with problems
 
 ### sym  #######################################################################
-# fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
-#                     grouping = .(subject, orLarge, vertical),
-#                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
-#                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
-#                     bootstrap = 'nonparametric',
-#                     B = 500)
-# save(fitsym, file = 'fitsym.RData')
-# load('fitsym.RData')
+fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
+                    grouping = .(subject, orLarge, vertical),
+                    guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
+                    parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
+                    bootstrap = 'nonparametric',
+                    B = 500)
+save(fitsym, file = 'fitsym.RData')
+load('fitsym.RData')
 
 
 ### psychometric functions 

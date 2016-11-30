@@ -9,7 +9,7 @@ source('graphical_parameters.R')
 dat <- read_csv('data/exp1.csv')
 
 dat <- dat %>%
-  select(subject, session, orLarge, orSmall, task, response) %>%
+  select(subject, session, orLarge, orSmall, task, rt, response) %>%
   mutate(response = ifelse(
     (orLarge == 0 & response == 'right') |
     (orLarge == 90 & response == 'down') |
@@ -41,7 +41,7 @@ dat <- dat %>% filter(!subject %in% 18:21) #eliminating subj with problems
 #                     bootstrap = 'nonparametric',
 #                     B = 500)
 # save(fitsym, file = 'fitsym.RData')
-load('fitsym.RData')
+#load('fitsym.RData')
 
 ### comparisons
 fitsym$thresholdcomparisons %>% filter(subject==subject2, vertical == vertical2)
@@ -73,4 +73,19 @@ psymbias <- ggplot(fitsym$thresholds) +
 psymbias
 
 ### sym  times #################################################################
-aa
+ggplot(dat, aes(x = rt)) + facet_wrap(~subject, scales = 'free') +
+  geom_histogram(bins = 20) + xlim(0, 2)
+
+datsub <- dat %>% filter(task == 'comp', rt < .7)
+                         
+fitsymsub <- quickpsy(datsub, 
+                   orSmall, response,
+                   grouping = .(subject, orLarge, vertical),
+                   guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
+                   parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
+                   bootstrap = 'nonparametric',
+                   B = 5)
+
+plotsym0 <- plotting_sym(fitsymsub, TRUE, FALSE) 
+
+fitsym %>% plot(xpanel = subject, ypanel = orLarge)

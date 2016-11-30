@@ -54,7 +54,7 @@ plotsym90 <- plotting_sym(fitsym, FALSE, TRUE)
 psym <- plot_grid(plotsym0, plotsym90, labels = c('A', 'B'), ncol = 1, 
                   hjust = 0, vjust = 1)
 save_plot('figures/sym.pdf', psym, base_width = one_column_width,
-          base_height = 1.75 * one_column_width)
+          base_height = 2.5 * one_column_width)
 
 ### correlation
 thresholds <-fitsym$thresholds %>% select(-vertical) %>% 
@@ -76,7 +76,7 @@ psymbias
 ggplot(dat, aes(x = rt)) + facet_wrap(~subject, scales = 'free') +
   geom_histogram(bins = 20) + xlim(0, 2)
 
-datsub <- dat %>% filter(task == 'comp', rt < .7)
+datsub <- dat %>% filter(task == 'comp', rt < .9)
                          
 fitsymsub <- quickpsy(datsub, 
                    orSmall, response,
@@ -86,6 +86,6 @@ fitsymsub <- quickpsy(datsub,
                    bootstrap = 'nonparametric',
                    B = 5)
 
-plotsym0 <- plotting_sym(fitsymsub, TRUE, FALSE) 
+plotting_sym(fitsymsub, TRUE, FALSE) 
 
 fitsym %>% plot(xpanel = subject, ypanel = orLarge)

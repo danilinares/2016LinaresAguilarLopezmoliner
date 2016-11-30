@@ -10,7 +10,7 @@ plotting_sym <- function(d, flagVertical, flagOrder) {
   colorchoicebiascurves <- ifelse(flagVertical,'#377eb8','#984ea3')
   ggplot(d$averages %>% filter(vertical==flagVertical),
          aes(x = orSmall, y = prob, color = orLarge, shape=orLarge)) +
-    facet_wrap(~subject,scales = 'free_x') +
+    facet_wrap(~subject,scales = 'free_x', ncol = 4) +
     geom_vline(xintercept = 0, lty = 2, size  = size_line)+
     geom_point(size = size_point) +
     geom_line(data = d$curves %>% filter(vertical==flagVertical),

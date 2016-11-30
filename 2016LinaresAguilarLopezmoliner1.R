@@ -89,3 +89,7 @@ fitsymsub <- quickpsy(datsub,
 plotsym0 <- plotting_sym(fitsymsub, TRUE, FALSE) 
 
 fitsym %>% plot(xpanel = subject, ypanel = orLarge)
+
+### david probando un mierdote
+
+kk <- 5

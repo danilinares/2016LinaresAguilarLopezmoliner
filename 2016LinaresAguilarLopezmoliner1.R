@@ -92,4 +92,4 @@ fitsym %>% plot(xpanel = subject, ypanel = orLarge)
 
 ### david probando un mierdote
 
-kk <- 5
+

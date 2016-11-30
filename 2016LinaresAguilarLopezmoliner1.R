@@ -1,7 +1,6 @@
 library(tidyverse)
 library(quickpsy)
-library(grid)
-library(gridExtra)
+library(cowplot)
 library(R.utils)
 sourceDirectory('R')
 source('graphical_parameters.R')
@@ -35,15 +34,17 @@ fitsym %>% plot(xpanel = subject, ypanel = orLarge)
 dat <- dat %>% filter(!subject %in% 18:21) #eliminating subj with problems
 
 ### sym  #######################################################################
-fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
-                    grouping = .(subject, orLarge, vertical),
-                    guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
-                    parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
-                    bootstrap = 'nonparametric',
-                    B = 500)
-save(fitsym, file = 'fitsym.RData')
+# fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
+#                     grouping = .(subject, orLarge, vertical),
+#                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
+#                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
+#                     bootstrap = 'nonparametric',
+#                     B = 500)
+# save(fitsym, file = 'fitsym.RData')
 load('fitsym.RData')
 
+### comparisons
+fitsym$thresholdcomparisons %>% filter(subject==subject2, vertical == vertical2)
 
 ### psychometric functions 
 theme_set(theme_classic(10))
@@ -63,7 +64,6 @@ thresholds <-fitsym$thresholds %>% select(-vertical) %>%
 plotting_corr(thresholds)
 
 ### biases 
-
 psymbias <- ggplot(fitsym$thresholds) + 
   facet_wrap(~vertical, ncol = 1, as.table = F) +
   geom_col(aes(x = subject, y = thre, fill = factor(orLarge)), 
@@ -71,4 +71,6 @@ psymbias <- ggplot(fitsym$thresholds) +
   geom_linerange(aes(x = subject, ymin = threinf, ymax = thresup, group = orLarge), 
    position = position_dodge(.9))
 psymbias
+
+### sym  times #################################################################
 

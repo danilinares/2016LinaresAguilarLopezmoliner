@@ -81,23 +81,7 @@ save_plot('figures/biases.pdf', pbar, base_width = one_half_column_width,
 
 ### absolute biases 
 thre_long_abs <- thre_long %>% # un poco cutre, manera mas elegante ?
-  group_by(subject, vertical) %>% 
-  do({
-    if('Top' %in% .$orLarge) {
-      if (.$thre[.$orLarge == 'Top'] < 0) k <- -1
-      else k <- 1
-    }
-    if('Right' %in% .$orLarge) {
-      if (.$thre[.$orLarge == 'Right'] < 0) k <- -1
-      else k <- 1
-    }
-    .$thre <- k * .$thre
-    .$threinf <- k * .$threinf
-    .$thresup <- k * .$thresup
-
-    return(.)
-  }) %>% 
-  ungroup()
+  group_by(subject, vertical) %>% do(changing_signs(.)) %>% ungroup()
 
 plotbarabs0 <- plotting_bars(thre_long_abs, TRUE, FALSE)
 plotbarabs90 <- plotting_bars(thre_long_abs, FALSE, FALSE)
@@ -133,7 +117,6 @@ t.test(verttop$thre, vertbot$thre, paired = TRUE)
 horrig <- thre_long_abs %>% filter(!vertical, orLarge == 'Right')
 horlef <- thre_long_abs %>% filter(!vertical, orLarge == 'Left')
 t.test(horrig$thre, horlef$thre, paired = TRUE)
-
 
 
 ### sym  times #################################################################

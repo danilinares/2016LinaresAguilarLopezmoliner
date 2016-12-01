@@ -121,12 +121,19 @@ save_plot('figures/biasesabsav.pdf', pbarabsav, base_width = one_half_column_wid
 ### t.tests
 verttop <- thre_long_abs_pred %>% filter(vertical, orLarge == 'Top')
 vertbot <- thre_long_abs_pred %>% filter(vertical, orLarge == 'Bottom')
-t.test(verttop$thre, vertbot$thre, paired = TRUE)
+vertbotpred <- thre_long_abs_pred %>% 
+  filter(vertical, orLarge == 'Bottom prediction')
 
 horrig <- thre_long_abs_pred %>% filter(!vertical, orLarge == 'Right')
 horlef <- thre_long_abs_pred %>% filter(!vertical, orLarge == 'Left')
-t.test(horrig$thre, horlef$thre, paired = TRUE)
+horlefpred <- thre_long_abs_pred %>% 
+  filter(!vertical, orLarge == 'Left prediction')
 
+ttesting <- function(d1, d2) t.test(d1$thre, d2$thre, paired = TRUE)
+ttesting(verttop, vertbot)
+ttesting(verttop, vertbotpred)
+ttesting(horrig, horlef)
+ttesting(horrig, horlefpred)
 
 ### sym  times #################################################################
 ggplot(dat, aes(x = rt)) + facet_wrap(~subject, scales = 'free') +

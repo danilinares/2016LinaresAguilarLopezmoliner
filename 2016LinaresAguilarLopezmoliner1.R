@@ -7,7 +7,9 @@ library(R.utils)
 sourceDirectory('R')
 source('graphical_parameters.R')
 
+################################################################################
 ### read and prepare the data ##################################################
+################################################################################
 dat <- read_csv('data/exp1.csv')
 
 dat <- dat %>%
@@ -23,8 +25,9 @@ dat <- dat %>%
 dat <- dat %>% 
   mutate(orLarge = orLarge %>% 
          recode(`0` = 'Top', `90` = 'Right', `180` = 'Bottom', `270` = 'Left'))
-
+################################################################################
 ### sym preliminary ############################################################
+################################################################################
 fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
                     grouping = .(subject, orLarge),
                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
@@ -35,7 +38,9 @@ fitsym %>% plot(xpanel = subject, ypanel = orLarge)
 
 dat <- dat %>% filter(!subject %in% 18:21) #eliminating subj with problems
 
+################################################################################
 ### sym  #######################################################################
+################################################################################
 # fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
 #                     grouping = .(subject, orLarge, vertical),
 #                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
@@ -45,10 +50,10 @@ dat <- dat %>% filter(!subject %in% 18:21) #eliminating subj with problems
 # save(fitsym, file = 'fitsym.RData')
 #load('fitsym.RData')
 
-### comparisons
+### comparisons ################################################################
 fitsym$thresholdcomparisons %>% filter(subject==subject2, vertical == vertical2)
 
-### psychometric functions 
+### psychometric functions #####################################################
 theme_set(theme_classic(10))
 plotsym0 <- plotting_sym(fitsym, TRUE, FALSE) 
 plotsym90 <- plotting_sym(fitsym, FALSE, TRUE)
@@ -58,7 +63,7 @@ psym <- plot_grid(plotsym0, plotsym90, labels = c('A', 'B'), ncol = 1,
 save_plot('figures/sym.pdf', psym, base_width = one_column_width,
           base_height = 2.5 * one_column_width)
 
-### correlation
+### correlation ################################################################
 thresholds <-fitsym$thresholds %>% select(-vertical) %>% 
   gather(key = thre_cond, value =  threshold, thre, threinf, thresup) %>% 
   group_by(thre_cond) %>% spread(orLarge, threshold)
@@ -67,24 +72,27 @@ pcor <- plotting_corr(thresholds)
 save_plot('figures/corr.pdf', pcor, base_width = one_half_column_width,
           base_height = one_column_width)
 
-### biases 
-thre_long <- fitsym$thresholds 
+### biases #####################################################################
 
-plotbar0 <- plotting_bars(thre_long, TRUE, FALSE)
-plotbar90 <- plotting_bars(thre_long, FALSE, FALSE)
+### biases
+thre_long <- fitsym$thresholds 
+thre_long_pred <- predicting(thre_long) 
+
+plotbar0 <- plotting_bars(thre_long_pred, TRUE, FALSE)
+plotbar90 <- plotting_bars(thre_long_pred, FALSE, FALSE)
 
 pbar <- plot_grid(plotbar0, plotbar90, labels = c('A', 'B'), ncol = 1, 
                   hjust = 0, vjust = 1)
 save_plot('figures/biases.pdf', pbar, base_width = one_half_column_width,
           base_height = 1.5 * one_column_width)
 
-
 ### absolute biases 
 thre_long_abs <- thre_long %>% # un poco cutre, manera mas elegante ?
   group_by(subject, vertical) %>% do(changing_signs(.)) %>% ungroup()
+thre_long_abs_pred <- predicting(thre_long_abs)
 
-plotbarabs0 <- plotting_bars(thre_long_abs, TRUE, FALSE)
-plotbarabs90 <- plotting_bars(thre_long_abs, FALSE, FALSE)
+plotbarabs0 <- plotting_bars(thre_long_abs_pred, TRUE, FALSE)
+plotbarabs90 <- plotting_bars(thre_long_abs_pred, FALSE, FALSE)
 
 pbarabs <- plot_grid(plotbarabs0, plotbarabs90, labels = c('A', 'B'), ncol = 1, 
                   hjust = 0, vjust = 1)
@@ -101,21 +109,22 @@ thre_long_abs_av <- thre_long_abs %>%
   ungroup() %>% 
   mutate(subject = 'All participants')
 
-plotbarabsav0 <- plotting_bars(thre_long_abs_av, TRUE, TRUE)
-plotbarabsav90 <- plotting_bars(thre_long_abs_av, FALSE, TRUE)
+thre_long_abs_av_pred <- predicting(thre_long_abs_av)
+plotbarabsav0 <- plotting_bars(thre_long_abs_av_pred, TRUE, TRUE)
+plotbarabsav90 <- plotting_bars(thre_long_abs_av_pred, FALSE, TRUE)
 
 pbarabsav <- plot_grid(plotbarabsav0, plotbarabsav90, labels = c('A', 'B'),  
                       hjust = 0, vjust = 1)
 save_plot('figures/biasesabsav.pdf', pbarabsav, base_width = one_half_column_width,
           base_height = 1 * one_column_width)
 
-
-verttop <- thre_long_abs %>% filter(vertical, orLarge == 'Top')
-vertbot <- thre_long_abs %>% filter(vertical, orLarge == 'Bottom')
+### t.tests
+verttop <- thre_long_abs_pred %>% filter(vertical, orLarge == 'Top')
+vertbot <- thre_long_abs_pred %>% filter(vertical, orLarge == 'Bottom')
 t.test(verttop$thre, vertbot$thre, paired = TRUE)
 
-horrig <- thre_long_abs %>% filter(!vertical, orLarge == 'Right')
-horlef <- thre_long_abs %>% filter(!vertical, orLarge == 'Left')
+horrig <- thre_long_abs_pred %>% filter(!vertical, orLarge == 'Right')
+horlef <- thre_long_abs_pred %>% filter(!vertical, orLarge == 'Left')
 t.test(horrig$thre, horlef$thre, paired = TRUE)
 
 

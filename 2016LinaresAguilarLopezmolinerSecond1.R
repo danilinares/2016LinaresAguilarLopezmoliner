@@ -50,10 +50,10 @@ fitsym2 <- quickpsy(dat2, orSmall, response,
                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
                     bootstrap = 'nonparametric',
-                    B = 20)
+                    B = 500)
 
 fitsym2 %>% plot(xpanel = subject, ypanel = mix)
-#save(fitsym2, file = 'fitsym2.RData')
+save(fitsym2, file = 'fitsym2.RData')
 #load('fitsym2.RData')
 
 

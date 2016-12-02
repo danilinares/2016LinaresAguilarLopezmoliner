@@ -23,6 +23,8 @@ dat2 <- dat2 %>%
 dat2 <- dat2 %>% 
   mutate(orLarge = orLarge %>% recode(`0` = 'Top', `180` = 'Bottom'))
 
+### esto se usa mucho david, calcular algun summary en un data frame
+### y despues añadirlo al data frame original con joints (normalmente left join)
 conditions <- dat2 %>% group_by(subject, session) %>% 
   distinct(orLarge) %>% summarise(mix = n(), first = first(orLarge))
 

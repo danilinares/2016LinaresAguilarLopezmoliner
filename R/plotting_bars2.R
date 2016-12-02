@@ -17,7 +17,7 @@ plotting_bars2 <- function(d, flagMix, flagAverage) {
     scale_fill_manual(values = c(fillbar2, fillbar1, fillbar3)) +
     scale_color_manual(values = c(fillbar2, fillbar1, fillbar1)) +
     guides(lty = FALSE) +
-    ylim(-1.27, 1.27) +
+   # ylim(-1.27, 1.27) +
     labs(x = 'Participant',y = 'PND (deg)', 
          color = text_reference, fill = text_reference) +
     theme(legend.position = 'top',

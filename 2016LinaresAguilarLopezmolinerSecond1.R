@@ -45,17 +45,99 @@ dat2 <- dat2 %>% filter(!subject %in% 6) #eliminating subj with problems
 ################################################################################
 ### sym  #######################################################################
 ################################################################################
-fitsym2 <- quickpsy(dat2, orSmall, response,
-                    grouping = .(subject, orLarge, mix),
-                    guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
-                    parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
-                    bootstrap = 'nonparametric',
-                    B = 500)
-
-fitsym2 %>% plot(xpanel = subject, ypanel = mix)
-save(fitsym2, file = 'fitsym2.RData')
+# fitsym2 <- quickpsy(dat2, orSmall, response,
+#                     grouping = .(subject, orLarge, mix),
+#                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
+#                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
+#                     bootstrap = 'nonparametric',
+#                     B = 500)
+#save(fitsym2, file = 'fitsym2.RData')
 #load('fitsym2.RData')
+fitsym2 %>% plot(xpanel = subject, ypanel = mix) + geom_vline(xintercept = 0)
 
 
+### comparisons ################################################################
+fitsym2$thresholdcomparisons %>% filter(subject==subject2, mix == mix2)
 
+### psychometric functions #####################################################
+theme_set(theme_classic(10))
+plotsym20 <- plotting_sym2(fitsym2, 1, TRUE) 
+plotsym290 <- plotting_sym2(fitsym2, 2, TRUE)
+
+psym2 <- plot_grid(plotsym20, plotsym290, labels = c('A', 'B'), ncol = 1, 
+                  hjust = 0, vjust = 1)
+save_plot('figures/sym2.pdf', psym2, base_width = one_column_width,
+          base_height = 1.5 * one_column_width)
+
+### correlation ################################################################
+thresholds2 <-fitsym2$thresholds %>% 
+  gather(key = thre_cond, value =  threshold, thre, threinf, thresup) %>% 
+  group_by(thre_cond) %>% spread(orLarge, threshold)
+
+pcor2 <- plotting_corr2(thresholds2)
+save_plot('figures/corr2.pdf', pcor2, base_width = one_half_column_width,
+          base_height = one_column_width)
+
+### biases #####################################################################
+
+### biases
+thre_long2 <- fitsym2$thresholds 
+thre_long_pred2 <- predicting(thre_long2) 
+
+plotbar20 <- plotting_bars2(thre_long_pred2, 1, FALSE)
+plotbar290 <- plotting_bars2(thre_long_pred2, 2, FALSE)
+
+pbar2 <- plot_grid(plotbar20, plotbar290, labels = c('A', 'B'), ncol = 1, 
+                  hjust = 0, vjust = 1)
+save_plot('figures/biases2.pdf', pbar2, base_width = one_half_column_width,
+          base_height = 1.5 * one_column_width)
+
+### absolute biases 
+thre_long_abs2 <- thre_long2 %>% # un poco cutre, manera mas elegante ?
+  group_by(subject, mix) %>% do(changing_signs(.)) %>% ungroup()
+thre_long_abs_pred2 <- predicting(thre_long_abs2)
+
+plotbarabs20 <- plotting_bars2(thre_long_abs_pred2, 1, FALSE)
+plotbarabs290 <- plotting_bars2(thre_long_abs_pred2, 2, FALSE)
+
+pbarabs2 <- plot_grid(plotbarabs20, plotbarabs290, labels = c('A', 'B'), ncol = 1, 
+                     hjust = 0, vjust = 1)
+save_plot('figures/biasesabs2.pdf', pbarabs2, base_width = one_half_column_width,
+          base_height = 1.5 * one_column_width)
+
+### absolute biases across subjects
+thre_long_abs_av2 <- thre_long_abs2 %>% 
+  group_by(orLarge, mix) %>% 
+  summarise(model = list(t.test(thre))) %>% 
+  mutate(tidy = map(model, tidy)) %>% 
+  unnest(tidy, .drop = TRUE) %>% 
+  rename(thre = estimate, threinf = conf.low, thresup = conf.high) %>% 
+  ungroup() %>% 
+  mutate(subject = 'All participants')
+
+thre_long_abs_av_pred2 <- predicting(thre_long_abs_av2)
+plotbarabsav20 <- plotting_bars2(thre_long_abs_av_pred2, 1, TRUE)
+plotbarabsav290 <- plotting_bars2(thre_long_abs_av_pred2, 2, TRUE)
+
+pbarabsav2 <- plot_grid(plotbarabsav20, plotbarabsav290, labels = c('A', 'B'),  
+                       hjust = 0, vjust = 1)
+save_plot('figures/biasesabsav2.pdf', pbarabsav2, base_width = one_half_column_width,
+          base_height = 1 * one_column_width)
+
+### t.tests
+top12 <- thre_long_abs_pred2 %>% filter(mix == 1, orLarge == 'Top')
+bot12 <- thre_long_abs_pred2 %>% filter(mix == 1, orLarge == 'Bottom')
+botpred12 <- thre_long_abs_pred2 %>% 
+  filter(mix == 1, orLarge == 'Bottom prediction')
+
+top22 <- thre_long_abs_pred2 %>% filter(mix == 2, orLarge == 'Top')
+bot22 <- thre_long_abs_pred2 %>% filter(mix == 2, orLarge == 'Bottom')
+botpred22 <- thre_long_abs_pred2 %>% 
+  filter(mix == 2, orLarge == 'Bottom prediction')
+
+ttesting <- function(d1, d2) t.test(d1$thre, d2$thre, paired = TRUE)
+ttesting(top12, bot12)
+ttesting(top12, botpred12)
+ttesting(top22, bot22)
+ttesting(top22, botpred22)
 

@@ -22,6 +22,11 @@ dat2 <- dat2 %>%
 
 dat2 <- dat2 %>% 
   mutate(orLarge = orLarge %>% recode(`0` = 'Top', `180` = 'Bottom'))
+
+conditions <- dat2 %>% group_by(subject, session) %>% 
+  distinct(orLarge) %>% summarise(mix = n(), first = first(orLarge))
+
+dat2 <- dat2 %>% left_join(conditions)
 ################################################################################
 ### sym preliminary ############################################################
 ################################################################################
@@ -34,3 +39,21 @@ fitsym2 <- quickpsy(dat2, orSmall, response,
 fitsym2 %>% plot(xpanel = subject, ypanel = orLarge)
 
 dat2 <- dat2 %>% filter(!subject %in% 6) #eliminating subj with problems
+
+################################################################################
+### sym  #######################################################################
+################################################################################
+fitsym2 <- quickpsy(dat2, orSmall, response,
+                    grouping = .(subject, orLarge, mix),
+                    guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
+                    parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
+                    bootstrap = 'nonparametric',
+                    B = 20)
+
+fitsym2 %>% plot(xpanel = subject, ypanel = mix)
+#save(fitsym2, file = 'fitsym2.RData')
+#load('fitsym2.RData')
+
+
+
+

@@ -7,3 +7,4 @@ size_point <- .9
 text_orientation <- 'Orientation (deg)'
 text_reference <- 'Reference'
 text_prob_sym <- 'Probability responding clockwise'
+text_prob_asym <- 'Probability responding aligned'

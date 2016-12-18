@@ -28,20 +28,20 @@ dat <- dat %>%
 ################################################################################
 ### sym preliminary ############################################################
 ################################################################################
-fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
+fitsympre <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
                     grouping = .(subject, orLarge),
                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
                     bootstrap = 'none')
 
-fitsym %>% plot(xpanel = subject, ypanel = orLarge)
+fitsympre %>% plot(xpanel = subject, ypanel = orLarge)
 
-dat <- dat %>% filter(!subject %in% 18:21) #eliminating subj with problems
+datfilt <- dat %>% filter(!subject %in% 18:21) #eliminating subj with problems
 
 ################################################################################
 ### sym  #######################################################################
 ################################################################################
-# fitsym <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
+# fitsym <- quickpsy(datfilt %>% filter(task == 'comp'), orSmall, response,
 #                     grouping = .(subject, orLarge, vertical),
 #                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
 #                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
@@ -154,5 +154,60 @@ plotting_sym(fitsymsub, TRUE, FALSE)
 fitsym %>% plot(xpanel = subject, ypanel = orLarge)
 
 ### david probando un mierdote
+
+
+################################################################################
+### asym  ######################################################################
+################################################################################
+f <- function(x, p) pnorm(x, p[1] - p[3], p[2]) - pnorm(x, p[1] + p[3], p[2])
+fitasym <- quickpsy(datfilt %>% filter(task == 'equ'), orSmall, response,
+                          grouping = .(subject,orLarge,vertical),
+                          B = 500, fun = f,
+                          parini=list(c(-2,2),c(0.1,3),c(0.1,3)),
+                          bootstrap = 'nonparametric', thresholds = F)
+
+# save(fitsym, file = 'fitsym.RData')
+#load('fitsym.RData')
+
+fitasym %>% plot(xpanel = subject, ypanel = orLarge)
+
+### comparisons ################################################################
+fitasym$parcomparisons %>%
+  filter(parn =='p1', subject==subject2, vertical==vertical2)
+
+### psychometric functions #####################################################
+plotasym0 <- plotting_asym(fitasym, TRUE, FALSE) 
+plotasym90 <- plotting_asym(fitasym, FALSE, TRUE)
+
+pasym <- plot_grid(plotasym0, plotasym90, labels = c('A', 'B'), ncol = 1, 
+                  hjust = 0, vjust = 1)
+save_plot('figures/asym.pdf', pasym, base_width = one_column_width,
+          base_height = 2.5 * one_column_width) # abra que eliminar los sujetos planos con un goodness of fit?
+
+### correlation ################################################################
+params <- fitasym$par %>% filter(parn =='p1') %>% ungroup() %>%   
+  select(-vertical) %>% 
+  gather(key = par_cond, value =  parameter, par, parinf, parsup) %>% 
+  group_by(par_cond) %>% spread(orLarge, parameter)
+
+pcora <- plotting_corr(params)
+save_plot('figures/corra.pdf', pcora, base_width = one_half_column_width,
+          base_height = one_column_width)
+
+################################################################################
+### sym and asym comparison ####################################################
+################################################################################
+parthre <- fitasym$par %>% filter(parn =='p1') %>% left_join(fitsym$thresholds)
+
+cor.test(parthre$par, parthre$thre)
+lm(parthre$thre~parthre$par) %>% confint()
+
+pcorcomp <- plotting_corr_comp(parthre)
+
+save_plot('figures/corrcomp.pdf', pcorcomp, base_width = one_half_column_width,
+          base_height = one_column_width)
+
+  
+
 
 

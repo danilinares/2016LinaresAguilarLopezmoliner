@@ -40,12 +40,12 @@ fitsym2 <- quickpsy(dat2, orSmall, response,
 
 fitsym2 %>% plot(xpanel = subject, ypanel = orLarge)
 
-dat2 <- dat2 %>% filter(!subject %in% 6) #eliminating subj with problems
+dat2filt <- dat2 %>% filter(!subject %in% 6) #eliminating subj with problems
 
 ################################################################################
 ### sym  #######################################################################
 ################################################################################
-# fitsym2 <- quickpsy(dat2, orSmall, response,
+# fitsym2 <- quickpsy(dat2filt, orSmall, response,
 #                     grouping = .(subject, orLarge, mix),
 #                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
 #                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
@@ -79,8 +79,6 @@ save_plot('figures/corr2.pdf', pcor2, base_width = one_half_column_width,
           base_height = one_column_width)
 
 ### biases #####################################################################
-
-### biases
 thre_long2 <- fitsym2$thresholds 
 thre_long_pred2 <- predicting(thre_long2) 
 
@@ -140,4 +138,51 @@ ttesting(top12, bot12)
 ttesting(top12, botpred12)
 ttesting(top22, bot22)
 ttesting(top22, botpred22)
+
+################################################################################
+### serial effects #############################################################
+################################################################################
+
+### mix 1
+datsermix1 <- dat2filt %>% filter(mix == 1) %>% group_by(orLarge) %>% 
+  mutate(lagorSmall = lag(orSmall)) %>% filter(!is.na(lagorSmall)) %>% 
+  mutate(sign = ifelse(lagorSmall > 0, 1, -1)) 
+
+fitser1 <- quickpsy(datsermix1, orSmall, response,
+                       grouping = .(subject, sign, orLarge),
+                       guess = TRUE, lapses = TRUE, 
+                       parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
+                       bootstrap = 'nonparametric',
+                       B = 50)
+pser1 <- plot(fitser1, color = sign, xpanel = subject, ypanel = orLarge) +
+  labs(title = 'Top and bottom in different blocks', 
+       caption = 'There is a typical aftereffect in some participants')
+
+save_plot('figures/ser1.pdf', pser1, base_width = 4*one_column_width,
+          base_height = 1 * one_column_width)
+
+
+### mix 2
+datsermix2 <- dat2filt %>% filter(mix == 2) %>% 
+  mutate(lagorLarge = lag(orLarge),
+         lagorSmall = lag(orSmall)) %>% 
+  filter(!is.na(lagorSmall)) %>% 
+  mutate(sign = if_else(lagorSmall > 0, 1, -1), 
+         equalorLarge = if_else(lagorLarge == orLarge, TRUE, FALSE)) 
+
+fitser2 <- quickpsy(datsermix2 , orSmall, response,
+                       grouping = .(subject, sign, equalorLarge),
+                       guess = TRUE, lapses = TRUE, 
+                       parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
+                       bootstrap = 'nonparametric',
+                       B = 50)
+pser2 <- plot(fitser2, color = sign, xpanel = subject, ypanel = equalorLarge) +
+  labs(title = 'Top and bottom mixed', 
+       subtitle = 'TRUE: There is not change',
+       caption = 'The typical aftereffect in some participants vanishes')
+
+
+save_plot('figures/ser2.pdf', pser2, base_width = 4*one_column_width,
+          base_height = 1 * one_column_width)
+
 

@@ -40,17 +40,17 @@ fitsym2 <- quickpsy(dat2, orSmall, response,
 
 fitsym2 %>% plot(xpanel = subject, ypanel = orLarge)
 
-dat2filt <- dat2 %>% filter(!subject %in% 6) #eliminating subj with problems
+dat2filt <- dat2 %>% filter(!subject %in% 9) #eliminating subj with problems
 
 ################################################################################
 ### sym  #######################################################################
 ################################################################################
-# fitsym2 <- quickpsy(dat2filt, orSmall, response,
-#                     grouping = .(subject, orLarge, mix),
-#                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
-#                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
-#                     bootstrap = 'nonparametric',
-#                     B = 500)
+fitsym2 <- quickpsy(dat2filt, orSmall, response,
+                    grouping = .(subject, orLarge, mix),
+                    guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
+                    parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
+                    bootstrap = 'nonparametric',
+                    B = 5)
 #save(fitsym2, file = 'fitsym2.RData')
 #load('fitsym2.RData')
 fitsym2 %>% plot(xpanel = subject, ypanel = mix) + geom_vline(xintercept = 0)
@@ -67,7 +67,7 @@ plotsym290 <- plotting_sym2(fitsym2, 2, TRUE)
 psym2 <- plot_grid(plotsym20, plotsym290, labels = c('A', 'B'), ncol = 1, 
                   hjust = 0, vjust = 1)
 save_plot('figures/sym2.pdf', psym2, base_width = one_column_width,
-          base_height = 1.5 * one_column_width)
+          base_height = 2 * one_column_width)
 
 ### correlation ################################################################
 thresholds2 <-fitsym2$thresholds %>% 

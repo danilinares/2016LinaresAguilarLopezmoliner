@@ -53,22 +53,6 @@ datfilt <- dat %>% filter(!subject %in% 18:21) #eliminating subj with problems
 # save(fitsym, file = 'fitsym.RData')
 #load('fitsym.RData')
 
-### threshold and comparisons ##################################################
-fitsym$thresholds %>% 
-  mutate(diffromzero = if_else(threinf * thresup > 0, TRUE, FALSE)) %>% 
-  filter(orLarge == 'Right')
-fitsym$thresholdcomparisons %>% filter(subject==subject2, vertical == vertical2)
-
-### psychometric functions #####################################################
-theme_set(theme_classic(10))
-plotsym0 <- plotting_sym(fitsym, TRUE, FALSE) 
-plotsym90 <- plotting_sym(fitsym, FALSE, TRUE)
-
-psym <- plot_grid(plotsym90, plotsym0, labels = c('a', 'b'), ncol = 1, 
-                  hjust = 0, vjust = 1)
-save_plot('figures/sym.pdf', psym, base_width = one_column_width,
-          base_height = 2.5 * one_column_width)
-
 ### correlation ################################################################
 thresholds <-fitsym$thresholds %>% select(-vertical) %>% 
   gather(key = thre_cond, value =  threshold, thre, threinf, thresup) %>% 
@@ -121,13 +105,7 @@ thre_long_abs_av <- thre_long_abs %>%
   mutate(subject = 'All participants')
 
 thre_long_abs_av_pred <- predicting(thre_long_abs_av)
-plotbarabsav0 <- plotting_bars(thre_long_abs_av_pred, TRUE, TRUE)
-plotbarabsav90 <- plotting_bars(thre_long_abs_av_pred, FALSE, TRUE)
 
-pbarabsav <- plot_grid(plotbarabsav0, plotbarabsav90, labels = c('A', 'B'),  
-                      hjust = 0, vjust = 1)
-save_plot('figures/biasesabsav.pdf', pbarabsav, base_width = one_half_column_width,
-          base_height = 1 * one_column_width)
 
 ### t.tests
 verttop <- thre_long_abs_pred %>% filter(vertical, orLarge == 'Top')
@@ -146,13 +124,67 @@ ttesting(verttop, vertbotpred)
 ttesting(horrig, horlef)
 ttesting(horrig, horlefpred)
 
+### threshold and comparisons ##################################################
+thres <- fitsym$thresholds %>% 
+  mutate(signif = if_else(threinf * thresup > 0, '*', '')) 
+subj_bias_sign <- thres %>% filter(signif == '*') %>% 
+  distinct(subject, vertical)
+
+threscomp <- fitsym$thresholdcomparisons %>% 
+  filter(subject==subject2, vertical == vertical2)
+
+sen_bias_dif_sign <- threscomp %>% filter(signif == '*') %>% 
+  distinct(subject, vertical)
+
+subjchoicbias <- sen_bias_sign %>% semi_join(subjbias) %>% 
+  left_join(dif %>% ungroup %>% select(subject, sensory))
+
+
+thresholdsbootstrap <- fitsym$thresholdsbootstrap %>% 
+  mutate(pred = FALSE) %>% 
+  filter(orLarge == 'Bottom' | orLarge == 'Left')
+thresholdsbootstrappred <- fitsym$thresholdsbootstrap %>% 
+  filter(orLarge == 'Top' | orLarge == 'Right') %>% 
+  mutate(thre = -thre, pred = TRUE) %>% ungroup() %>% 
+  mutate(orLarge = if_else(orLarge == 'Top', 'Bottom', 'Left'))
+thresholdsbootstrapall <- bind_rows(thresholdsbootstrap, 
+                                    thresholdsbootstrappred)
+threscomppred <- thresholdsbootstrapall %>% group_by(subject, vertical, sample) %>% 
+  do(tibble(dif = diff(.$thre))) %>% group_by(subject, vertical) %>% 
+  do({
+    ci <- quantile(.$dif, c(.025, .975))
+    dif <- mean(.$dif)
+    difinf <- ci[[1]]
+    difsup <- ci[[2]]
+    signif <- if_else(difinf * difsup > 0, '*', '')
+    tibble(dif, difinf, difsup, signif)
+  })
+
+choic_bias_dif_sign <- threscomppred %>% filter(signif == '*') %>% 
+  distinct(subject, vertical)
+
+sen_bias_sign <- threscomp %>% filter(signif == '*') %>% 
+  distinct(subject, vertical)
+
+
 ################################################################################
 ### figures ####################################################################
 ################################################################################
-pfig2 <- plot_grid(plotsym90, plotsym0, labels = c('a', 'b'), 
+theme_set(theme_classic(10))
+### figure 2
+plotsym0 <- plotting_sym(fitsym, subjchoicbias, TRUE, TRUE) 
+plotsym90 <- plotting_sym(fitsym, subjchoicbias, FALSE, TRUE)
+
+plotbarabsav90 <- plotting_bars_av(thre_long_abs_av_pred, 
+                                   thre_long_abs_pred, FALSE)
+plotbarabsav0 <- plotting_bars_av(thre_long_abs_av_pred, 
+                                   thre_long_abs_pred, TRUE)
+
+pfig2 <- plot_grid(plotsym90, plotbarabsav90, plotsym0, plotbarabsav0, 
+                   labels = c('a', 'b', 'c', 'd'), 
                    rel_widths = c(2, 1), hjust = 0, vjust = 1)
 save_plot('figures/fig2.pdf', pfig2, base_width = two_column_width,
-          base_height = .5 * two_column_width)
+          base_height = .7* two_column_width)
 ### sym  times #################################################################
 ggplot(dat, aes(x = rt)) + facet_wrap(~subject, scales = 'free') +
   geom_histogram(bins = 20) + xlim(0, 2)

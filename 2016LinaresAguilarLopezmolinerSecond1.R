@@ -32,15 +32,18 @@ dat2 <- dat2 %>% left_join(conditions)
 ################################################################################
 ### sym preliminary ############################################################
 ################################################################################
-fitsym2 <- quickpsy(dat2, orSmall, response,
-                    grouping = .(subject, orLarge),
+fitsympre2 <- quickpsy(dat2, orSmall, response,
+                    grouping = .(subject, orLarge, mix),
                     guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
                     bootstrap = 'none')
 
-fitsym2 %>% plot(xpanel = subject, ypanel = orLarge)
+plotall2 <- fitsympre2 %>% plot(ypanel = subject, xpanel = mix, color = orLarge)
 
-dat2filt <- dat2 %>% filter(!subject %in% 9) #eliminating subj with problems
+save_plot('figures/all2.pdf', plotall2, base_width = 2 * one_column_width,
+          base_height = 5 * one_column_width)
+
+dat2filt <- dat2 %>% filter(!subject %in% 14) #eliminating subj with problems
 
 ################################################################################
 ### sym  #######################################################################
@@ -53,7 +56,6 @@ fitsym2 <- quickpsy(dat2filt, orSmall, response,
                     B = 5)
 #save(fitsym2, file = 'fitsym2.RData')
 #load('fitsym2.RData')
-fitsym2 %>% plot(xpanel = subject, ypanel = mix) + geom_vline(xintercept = 0)
 
 
 ### comparisons ################################################################
@@ -81,6 +83,10 @@ save_plot('figures/corr2.pdf', pcor2, base_width = one_half_column_width,
 ### biases #####################################################################
 thre_long2 <- fitsym2$thresholds 
 thre_long_pred2 <- predicting(thre_long2) 
+
+dif2 <- thre_long_pred2 %>% group_by(subject, mix) %>% 
+  do(diferences2(.)) %>% 
+  mutate(sensory = if_else(dif < difpred, TRUE, FALSE))
 
 plotbar20 <- plotting_bars2(thre_long_pred2, 1, FALSE)
 plotbar290 <- plotting_bars2(thre_long_pred2, 2, FALSE)

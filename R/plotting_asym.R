@@ -1,71 +1,42 @@
-plotting_asym <- function(d, flagVertical, flagOrder) {
+plotting_asym <- function(d, dsub1, flagVertical, flagOrder) {
   ### max
   maxi <- d$curves %>% summarise(maxi = approx(x = y, y = x, xout = max(y))[[1]])
   d$par <- d$par %>% left_join(maxi)
   
-  print(d$par)
-  colorcurves1 <- ifelse(flagVertical,'#e41a1c','#4daf4a')
-  colorcurves2 <- ifelse(flagVertical,'#377eb8','#984ea3')
-  colorchoicebiascurves <- ifelse(flagVertical,'#e41a1c','#4daf4a')
-  ggplot(d$averages %>% filter(vertical==flagVertical),
-         aes(x = orSmall, y = prob, color = orLarge, shape=orLarge)) +
-    facet_wrap(~subject,scales = 'free_x', ncol = 4) +
+  colorcurves1 <- ifelse(flagVertical,'#377eb8','#984ea3')
+  colorcurves2 <- ifelse(flagVertical,'#e41a1c','#4daf4a')
+  colorchoicebiascurves <- ifelse(flagVertical,'#377eb8','#984ea3')
+  ggplot(d$averages %>% filter(vertical==flagVertical)) +
+    facet_wrap(~subject,scales = 'free_x', ncol = 6) +
     geom_vline(xintercept = 0, lty = 2, size  = size_line)+
-    geom_point(size = size_point) +
+    geom_point(aes(x = orSmall, y = prob, color = orLarge, shape=orLarge),
+               size = size_point) +
     geom_line(data = d$curves %>% filter(vertical==flagVertical),
-              aes(x = x, y = y), size  = size_line) +
-    geom_segment(data = d$par %>% filter(parn =='p1') %>% 
-                   filter(vertical==flagVertical),
+              aes(x = x, y = y, color = orLarge), size  = size_line) +
+    geom_segment(data = d$par %>% filter(parn =='p1', vertical==flagVertical),
                 aes(x = par, xend = par, y = 0, yend = maxi, color = orLarge), 
                 size  = size_line) +
+    geom_segment(data = d$par %>% filter(parn =='p1', vertical==flagVertical),
+                 aes(x=parinf,xend = parsup, y = .15, yend = 0.15,
+                     color=orLarge), size  = size_line) +
+    geom_text(data = dsub1 %>% filter(vertical == flagVertical),
+              x = -1.8, y = .8, label = '*', size = 4) +
     scale_color_manual(values = c(colorcurves1, colorcurves2)) +
     guides(color = guide_legend(reverse=flagOrder),
            shape = guide_legend(reverse=flagOrder)) +
     labs(x = text_orientation, y = text_prob_asym,
          color = text_reference, shape = text_reference) +
-    scale_y_continuous(breaks = c(0,.5,1)) +
-    coord_cartesian(xlim=c(-2.1, 2.1),ylim=c(0,1)) +
-    theme(legend.position = c(.9,.07),
+    scale_y_continuous(breaks = c(0, .5, 1), limits = c(0,1)) +
+    scale_x_continuous(breaks = -2:2, labels = c('','-1','0','1',''), 
+                       limits = c(-2.1, 2.1)) +
+    theme(legend.position = c(.6,.1),
+          legend.box.background = element_rect(),
+          legend.margin = margin(.2, .2, .2, .2, 'line'), 
           strip.background = element_blank(),
+          axis.title.x = element_text(hjust = .2),
           axis.line = element_line(size = size_line),
           axis.ticks= element_line(size = size_line))
   
-  
-  # colorcurves1 <- ifelse(flagVertical,'#e41a1c','#4daf4a')
-  # colorcurves2 <- ifelse(flagVertical,'#377eb8','#984ea3')
-  # colorchoicebiascurves <- ifelse(flagVertical,'#377eb8','#984ea3')
-  # ggplot() +
-  #   facet_wrap(~subject,scales = 'free_x') +
-  #   geom_vline(xintercept = 0, lty = 2, size  = sizeLine1)+
-  #   geom_rect(data = fitcomp$thresholds %>%
-  #               filter(vertical==flagVertical),
-  #             aes(xmin=threinf,xmax=thresup,ymin=0, ymax=1, fill=orLarge),
-  #             show.legend = FALSE,alpha = .25) +
-  #   #     geom_segment(data = fitcomp$thresholds %>%
-  #   #                    filter(vertical==flagVertical),
-  #   #                  aes(x=threinf,xend = thresup, y = 0, yend = 0,
-  #   #                      color=orLarge), show.legend = FALSE,
-  #   #                  alpha = .25, size = 2.25) +
-  #   geom_point(data=fitequcumnorm$averages %>% filter(vertical==flagVertical),
-  #              aes(x = orSmall, y = prob, color = orLarge, shape=orLarge),
-  #              size = sizePoint1) +
-    # geom_segment(data = pse %>% filter(vertical==flagVertical),
-    #              aes(x = parinf, xend = parsup, y = 0, yend = 0,
-    #                  color = orLarge),size  = sizeLine1) +
-  #   geom_segment(data = pse %>% filter(vertical==flagVertical),
-  #                aes(x = par, xend = par, y = 0, yend = maxi,
-  #                    color = orLarge),size  = sizeLine1) +
-  #   geom_line(data = fitequcumnorm$curves %>% filter(vertical==flagVertical),
-  #             aes(x = x, y = y, color = orLarge),
-  #             size  = sizeLine1) +
-  #   scale_color_manual(values = c(colorcurves1,colorcurves2)) +
-  #   guides(color = guide_legend(reverse=flagOrder),
-  #          shape = guide_legend(reverse=flagOrder)) +
-  #   labs(x = 'Orientation (deg)', y = textProb2,
-  #        color = textReference, shape = textReference) +
-  #   scale_y_continuous(breaks = c(0,.5,1)) +
-  #   coord_cartesian(xlim=c(-2.1, 2.1),ylim=c(0,1)) +
-  #   theme(strip.background = element_blank())
   
 }
 

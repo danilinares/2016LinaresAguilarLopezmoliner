@@ -20,13 +20,14 @@ dat <- dat %>%
     (orLarge == 180 & response == 'left') |
     (orLarge == 270 & response == 'up') |
     (response == 'm'), 1, 0),
-    vertical = ifelse(orLarge==0 | orLarge==180, TRUE, FALSE))
+    vertical = ifelse(orLarge == 0 | orLarge == 180, TRUE, FALSE))
 
 dat <- dat %>% 
   mutate(orLarge = orLarge %>% 
          recode(`0` = 'Top', `90` = 'Right', `180` = 'Bottom', `270` = 'Left'))
+
 ################################################################################
-### sym preliminary ############################################################
+### sym task preliminary #######################################################
 ################################################################################
 fitsympre <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
                     grouping = .(subject, orLarge),
@@ -34,15 +35,15 @@ fitsympre <- quickpsy(dat %>% filter(task == 'comp'), orSmall, response,
                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
                     bootstrap = 'none')
 
-plotall <- fitsympre %>% plot(ypanel = subject, xpanel = orLarge)
+plotallsym <- fitsympre %>% plot(ypanel = subject, xpanel = orLarge)
 
-save_plot('figures/all.pdf', plotall, base_width = 2 * one_column_width,
+save_plot('figures/all/allsym.pdf', plotallsym, base_width = 2 * one_column_width,
           base_height = 5 * one_column_width)
 
 datfilt <- dat %>% filter(!subject %in% 18:21) #eliminating subj with problems
 
 ################################################################################
-### sym  #######################################################################
+### sym final data #############################################################
 ################################################################################
 # fitsym <- quickpsy(datfilt %>% filter(task == 'comp'), orSmall, response,
 #                     grouping = .(subject, orLarge, vertical),
@@ -50,91 +51,60 @@ datfilt <- dat %>% filter(!subject %in% 18:21) #eliminating subj with problems
 #                     parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
 #                     bootstrap = 'nonparametric',
 #                     B = 500)
-# save(fitsym, file = 'fitsym.RData')
+#save(fitsym, file = 'fitsym.RData')
 #load('fitsym.RData')
 
-### biases #####################################################################
+
+################################################################################
+### sym biases #################################################################
+################################################################################
 
 ### biases
-thre_long <- fitsym$thresholds 
-thre_long_pred <- predicting(thre_long) 
+thresholds <- fitsym$thresholds %>% 
+  mutate(signif = if_else(threinf * thresup > 0, '*', ' '))
+thresholds_pred <- predicting(thresholds) 
 
-dif <- thre_long_pred %>% group_by(subject, vertical) %>% 
-  do(diferences(.)) %>% 
-  mutate(sensory = if_else(dif < difpred, TRUE, FALSE))
-
-
-plotbar0 <- plotting_bars(thre_long_pred, TRUE, FALSE)
-plotbar90 <- plotting_bars(thre_long_pred, FALSE, FALSE)
+plotbar0 <- plotting_bars(thresholds_pred, TRUE)
+plotbar90 <- plotting_bars(thresholds_pred, FALSE)
 
 pbar <- plot_grid(plotbar0, plotbar90, labels = c('A', 'B'), ncol = 1, 
                   hjust = 0, vjust = 1)
-save_plot('figures/biases.pdf', pbar, base_width = one_half_column_width,
+
+save_plot('figures/all/biases.pdf', pbar, base_width = one_half_column_width,
           base_height = 1.5 * one_column_width)
 
 ### absolute biases 
-thre_long_abs <- thre_long %>% # un poco cutre, manera mas elegante ?
+thresholds_abs <- thresholds %>% 
   group_by(subject, vertical) %>% do(changing_signs(.)) %>% ungroup()
-thre_long_abs_pred <- predicting(thre_long_abs)
+thresholds_abs_pred <- predicting(thresholds_abs)
 
-plotbarabs0 <- plotting_bars(thre_long_abs_pred, TRUE, FALSE)
-plotbarabs90 <- plotting_bars(thre_long_abs_pred, FALSE, FALSE)
+plotbarabs0 <- plotting_bars(thresholds_abs_pred, TRUE)
+plotbarabs90 <- plotting_bars(thresholds_abs_pred, FALSE)
 
 pbarabs <- plot_grid(plotbarabs0, plotbarabs90, labels = c('A', 'B'), ncol = 1, 
                   hjust = 0, vjust = 1)
-save_plot('figures/biasesabs.pdf', pbarabs, base_width = one_half_column_width,
+
+save_plot('figures/all/biasesabs.pdf', pbarabs, base_width = one_half_column_width,
           base_height = 1.5 * one_column_width)
 
 ### absolute biases across subjects
-thre_long_abs_av <- thre_long_abs %>% 
-  group_by(orLarge, vertical) %>% 
-  summarise(model = list(t.test(thre))) %>% 
-  mutate(tidy = map(model, tidy)) %>% 
-  unnest(tidy, .drop = TRUE) %>% 
-  rename(thre = estimate, threinf = conf.low, thresup = conf.high) %>% 
-  ungroup() %>% 
-  mutate(subject = 'All participants')
+thresholds_abs_av <- average_abs_bias(thresholds_abs)
 
-thre_long_abs_av_pred <- predicting(thre_long_abs_av)
+thresholds_abs_av_pred <- predicting(thresholds_abs_av)
 
-### t.tests
-verttop <- thre_long_abs_pred %>% filter(vertical, orLarge == 'Top')
-vertbot <- thre_long_abs_pred %>% filter(vertical, orLarge == 'Bottom')
-vertbotpred <- thre_long_abs_pred %>% 
-  filter(vertical, orLarge == 'Bottom prediction')
+plotbarabsav90 <- plotting_bars_av(thresholds_abs_av_pred, 
+                                   thresholds_abs_pred, FALSE)
+plotbarabsav0 <- plotting_bars_av(thresholds_abs_av_pred, 
+                                  thresholds_abs_pred, TRUE)
 
-horrig <- thre_long_abs_pred %>% filter(!vertical, orLarge == 'Right')
-horlef <- thre_long_abs_pred %>% filter(!vertical, orLarge == 'Left')
-horlefpred <- thre_long_abs_pred %>% 
-  filter(!vertical, orLarge == 'Left prediction')
-
-ttesting <- function(d1, d2) t.test(d1$thre, d2$thre, paired = TRUE)
-ttesting(verttop, vertbot)
-ttesting(verttop, vertbotpred)
-ttesting(horrig, horlef)
-ttesting(horrig, horlefpred)
-
-### threshold and comparisons ##################################################
-thres <- fitsym$thresholds %>% 
-  mutate(signif = if_else(threinf * thresup > 0, '*', ''))
-
-subj_bias_sign <- thres %>% 
-  filter(signif == '*', orLarge == 'Top' | orLarge == 'Right') %>% 
-  select(subject, vertical)
-
+################################################################################
+### threshold comparisons ######################################################
+################################################################################
 threscomp <- fitsym$thresholdcomparisons %>% 
-  filter(subject==subject2, vertical == vertical2)
+  filter(subject == subject2, vertical == vertical2)
 
-subj_sen_bias_dif_sign <- threscomp %>% filter(signif == '*') %>% 
-  select(subject, vertical)
-
-subj_sen_bias_dif_no_sign <- threscomp %>% filter(signif == ' ') %>% 
-  select(subject, vertical)
-
-### comparing with choice bias prediction
 thresholdsbootstrap <- fitsym$thresholdsbootstrap %>% 
-  mutate(pred = FALSE) %>% 
-  filter(orLarge == 'Bottom' | orLarge == 'Left')
+  mutate(pred = FALSE) %>% filter(orLarge == 'Bottom' | orLarge == 'Left')
 
 thresholdsbootstrappred <- fitsym$thresholdsbootstrap %>% 
   filter(orLarge == 'Top' | orLarge == 'Right') %>% 
@@ -144,22 +114,25 @@ thresholdsbootstrappred <- fitsym$thresholdsbootstrap %>%
 thresholdsbootstrapall <- bind_rows(thresholdsbootstrap, 
                                     thresholdsbootstrappred)
 
-threscomppred <- thresholdsbootstrapall %>% 
-  group_by(subject, vertical, sample) %>% 
-  do(tibble(dif = diff(.$thre))) %>% group_by(subject, vertical) %>% 
-  do({
-    ci <- quantile(.$dif, c(.025, .975))
-    dif <- mean(.$dif)
-    difinf <- ci[[1]]
-    difsup <- ci[[2]]
-    signif <- if_else(difinf * difsup > 0, '*', '')
-    tibble(dif, difinf, difsup, signif)
-  })
+threscomppred <- threscomppredfun(thresholdsbootstrapall)
+
+################################################################################
+### best explanation for each participant ######################################
+################################################################################
+subj_bias_sign <- thresholds %>% 
+  filter(signif == '*', orLarge == 'Top' | orLarge == 'Right') %>% 
+  select(subject, vertical)
+
+subj_sen_bias_dif_sign <- threscomp %>% filter(signif == '*') %>% 
+  select(subject, vertical)
+
+subj_sen_bias_dif_no_sign <- threscomp %>% filter(signif == ' ') %>% 
+  select(subject, vertical)
 
 subj_choic_bias_dif_sign <- threscomppred %>% filter(signif == '*') %>% 
   select(subject, vertical)
 
-subj_choic_bias_dif_no_sign <- threscomppred %>% filter(signif == '') %>% 
+subj_choic_bias_dif_no_sign <- threscomppred %>% filter(signif == ' ') %>% 
   select(subject, vertical)
 
 choic_sign_sen_no_sign <- subj_choic_bias_dif_sign %>% 
@@ -174,14 +147,15 @@ choic_sign_sen_sign <- subj_choic_bias_dif_sign %>%
   semi_join(subj_sen_bias_dif_sign) %>% 
   semi_join(subj_bias_sign) %>% ungroup()
 
-
+sub_sen_or_choic <- thresholds_pred %>% group_by(subject, vertical) %>% 
+  do(diferences(.)) %>% 
+  mutate(sensory = if_else(dif < difpred, TRUE, FALSE))
 
 ################################################################################
-### figures ####################################################################
+### figure 2 ###################################################################
 ################################################################################
 theme_set(theme_classic(10))
 
-### figure 2 ###################################################################
 plotsym0 <- plotting_sym(fitsym, choic_sign_sen_no_sign, 
                          choic_no_sign_sen_sign, 
                          choic_sign_sen_sign, TRUE, TRUE) 
@@ -189,90 +163,219 @@ plotsym90 <- plotting_sym(fitsym, choic_sign_sen_no_sign,
                           choic_no_sign_sen_sign, 
                           choic_sign_sen_sign,FALSE, TRUE)
 
-plotbarabsav90 <- plotting_bars_av(thre_long_abs_av_pred, 
-                                   thre_long_abs_pred, FALSE)
-plotbarabsav0 <- plotting_bars_av(thre_long_abs_av_pred, 
-                                   thre_long_abs_pred, TRUE)
-
 pfig2 <- plot_grid(plotsym90, plotbarabsav90, plotsym0, plotbarabsav0, 
                    labels = c('a', 'b', 'c', 'd'), 
                    rel_widths = c(2, 1), hjust = 0, vjust = 1)
 
-save_plot('figures/fig2.pdf', pfig2, base_width = two_column_width,
+save_plot('figures/paper/fig2.pdf', pfig2, base_width = two_column_width,
           base_height = .7* two_column_width)
-### sym  times #################################################################
-ggplot(dat, aes(x = rt)) + facet_wrap(~subject, scales = 'free') +
-  geom_histogram(bins = 20) + xlim(0, 2)
 
-datsub <- dat %>% filter(task == 'comp', rt < .9)
-                         
-fitsymsub <- quickpsy(datsub, 
-                   orSmall, response,
-                   grouping = .(subject, orLarge, vertical),
-                   guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
-                   parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
-                   bootstrap = 'nonparametric',
-                   B = 5)
+################################################################################
+### sym t-tests ################################################################
+################################################################################
+verttop <- thresholds_abs_pred %>% filter(vertical, orLarge == 'Top')
+vertbot <- thresholds_abs_pred %>% filter(vertical, orLarge == 'Bottom')
+vertbotpred <- thresholds_abs_pred %>% 
+  filter(vertical, orLarge == 'Bottom prediction')
 
-plotting_sym(fitsymsub, TRUE, FALSE) 
+horrig <- thresholds_abs_pred %>% filter(!vertical, orLarge == 'Right')
+horlef <- thresholds_abs_pred %>% filter(!vertical, orLarge == 'Left')
+horlefpred <- thresholds_abs_pred %>% 
+  filter(!vertical, orLarge == 'Left prediction')
 
-fitsym %>% plot(xpanel = subject, ypanel = orLarge)
+ttesting(verttop, vertbot)
+ttesting(verttop, vertbotpred)
+ttesting(horrig, horlef)
+ttesting(horrig, horlefpred)
 
-### david probando un mierdote
+################################################################################
+### asym preliminary ###########################################################
+################################################################################
+f <- function(x, p) pnorm(x, p[1] - p[3], p[2]) - pnorm(x, p[1] + p[3], p[2])
+fitasympre <- quickpsy(datfilt %>% filter(task == 'equ'), orSmall, response,
+                    grouping = .(subject, orLarge),
+                    fun = f,
+                    parini=list(c(-2,2),c(0.1,3),c(0.1,3)),
+                    bootstrap = 'none', thresholds = F)
 
+plotallasym <- fitasympre %>% plot(ypanel = subject, xpanel = orLarge)
+
+save_plot('figures/allasym.pdf', plotallasym, base_width = 2 * one_column_width,
+          base_height = 5 * one_column_width)
+
+datfilt2 <- datfilt %>% filter(!subject %in% c(7, 17)) # eliminating subj 
+#with problems
 
 ################################################################################
 ### asym  ######################################################################
 ################################################################################
-f <- function(x, p) pnorm(x, p[1] - p[3], p[2]) - pnorm(x, p[1] + p[3], p[2])
-fitasym <- quickpsy(datfilt %>% filter(task == 'equ'), orSmall, response,
-                          grouping = .(subject,orLarge,vertical),
-                          B = 500, fun = f,
-                          parini=list(c(-2,2),c(0.1,3),c(0.1,3)),
-                          bootstrap = 'nonparametric', thresholds = F)
-
-# save(fitsym, file = 'fitsym.RData')
+# fitasym <- quickpsy(datfilt2 %>% filter(task == 'equ'), orSmall, response,
+#                           grouping = .(subject, orLarge, vertical),
+#                           B = 500, fun = f,
+#                           parini=list(c(-2,2),c(0.1,3),c(0.1,3)),
+#                           bootstrap = 'nonparametric', thresholds = F)
+#save(fitsym, file = 'fitsym.RData')
 #load('fitsym.RData')
 
-fitasym %>% plot(xpanel = subject, ypanel = orLarge)
+### correlation  
+parthre <- fitasym$par %>% filter(parn =='p1') %>% left_join(fitsym$thresholds)
+cor.test(parthre$par, parthre$thre)
 
-### comparisons ################################################################
-fitasym$parcomparisons %>%
+################################################################################
+### collapsing data ############################################################
+################################################################################
+fitsymv <- quickpsy(datfilt %>% filter(task == 'comp'), orSmall, response,
+                    grouping = .(subject,  vertical),
+                    guess = TRUE, lapses = TRUE, xmax = -4, xmin = 4,
+                    parini = list(c(-2, 2), c(0.1,3), c(0,.4), c(0,.4)),
+                    bootstrap = 'none')
+
+fitasymv <- quickpsy(datfilt2 %>% filter(task == 'equ'), orSmall, response,
+                     grouping = .(subject, vertical),
+                     fun = f,
+                     parini=list(c(-2,2),c(0.1,3),c(0.1,3)),
+                     bootstrap = 'none', thresholds = F)
+
+parthrev <- fitasymv$par %>% filter(parn =='p1') %>% 
+  left_join(fitsymv$thresholds) 
+
+### correlation
+cor.test(parthrev$par, parthrev$thre)
+lm(parthrev$thre~parthrev$par) %>% confint()
+
+################################################################################
+### asym absolute biases #######################################################
+################################################################################
+thre_longa <- fitasym$par %>% filter(parn == 'p1') %>% 
+  rename(thre = par, threinf = parinf, thresup = parsup)
+
+thre_long_absa <- thre_longa %>% 
+  group_by(subject, vertical) %>% do(changing_signs(.)) %>% ungroup()
+
+thre_long_abs_ava <- average_abs_bias(thre_long_absa)
+
+################################################################################
+### asym significances #########################################################
+################################################################################
+fitasym$par %>% filter(parn =='p1', orLarge == 'Right' | orLarge == 'Top') %>%
+  mutate(signif = if_else(parinf * parsup > 0, TRUE, FALSE))
+
+threscompa <- fitasym$parcomparisons %>%
   filter(parn =='p1', subject==subject2, vertical==vertical2)
 
-### psychometric functions #####################################################
-plotasym0 <- plotting_asym(fitasym, TRUE, FALSE) 
-plotasym90 <- plotting_asym(fitasym, FALSE, TRUE)
+subj_sen_bias_dif_signa <- threscompa %>% filter(signif == '*') %>% 
+  ungroup() %>% select(subject, vertical)
 
-pasym <- plot_grid(plotasym0, plotasym90, labels = c('A', 'B'), ncol = 1, 
-                  hjust = 0, vjust = 1)
-save_plot('figures/asym.pdf', pasym, base_width = one_column_width,
-          base_height = 2.5 * one_column_width) # abra que eliminar los sujetos planos con un goodness of fit?
+verttopa <- thre_long_absa %>% filter(vertical, orLarge == 'Top')
+vertbota <- thre_long_absa %>% filter(vertical, orLarge == 'Bottom')
+horriga <- thre_long_absa %>% filter(!vertical, orLarge == 'Right')
+horlefa <- thre_long_absa %>% filter(!vertical, orLarge == 'Left')
+ttesting(verttopa, vertbota)
+ttesting(horriga, horlefa)
+
+################################################################################
+### figure 3 ###################################################################
+################################################################################
+plotasym0 <- plotting_asym(fitasym, subj_sen_bias_dif_signa, TRUE, TRUE) 
+plotasym90 <- plotting_asym(fitasym, subj_sen_bias_dif_signa, FALSE, TRUE)
+
+plotbarabsava <- plotting_bars_ava(thre_long_abs_ava, thre_long_absa)
+pcorcompv <- plotting_corr_compv(parthrev)
+
+pfig3 <- plot_grid(plotasym90, plotbarabsava, plotasym0, pcorcompv, 
+                   labels = c('a', 'b', 'c', 'd'), 
+                   rel_widths = c(2, 1), hjust = 0, vjust = 1)
+
+save_plot('figures/fig3.pdf', pfig3, base_width = two_column_width,
+          base_height = .7* two_column_width)
+
+
 
 ### correlation ################################################################
-params <- fitasym$par %>% filter(parn =='p1') %>% ungroup() %>%   
+### sym 
+
+thre_wide <- fitsym$thresholds %>% select(-vertical) %>% 
+  gather(key = thre_cond, value =  threshold, thre, threinf, thresup) %>% 
+  group_by(thre_cond) %>% spread(orLarge, threshold) %>% 
+  filter(thre_cond == 'thre')
+
+
+thre_hv <- fitsymv$thresholds %>% spread(vertical, thre, sep = '_') %>% 
+  rename(Horizontal = vertical_FALSE, Vertical = vertical_TRUE)
+
+### asynm 
+par_wide <- fitasym$par %>% filter(parn =='p1') %>% ungroup() %>%   
   select(-vertical) %>% 
   gather(key = par_cond, value =  parameter, par, parinf, parsup) %>% 
-  group_by(par_cond) %>% spread(orLarge, parameter)
+  group_by(par_cond) %>% spread(orLarge, parameter) %>% 
+  filter(par_cond == 'par')
 
-pcora <- plotting_corr(params)
-save_plot('figures/corra.pdf', pcora, base_width = one_half_column_width,
-          base_height = one_column_width)
+par_hv <- fitasymv$par %>% filter(parn =='p1') %>% 
+  spread(vertical, par, sep = '_') %>% 
+  rename(Horizontal = vertical_FALSE, Vertical = vertical_TRUE)
+
+
+################################################################################
+### Figure correlations ########################################################
+################################################################################
+pcorsym1 <- plotting_corr(thre_wide, 'Top', 'Bottom')
+pcorsym2 <- plotting_corr(thre_wide, 'Right', 'Left')
+pcorsym3 <- plotting_corr(thre_wide, 'Top', 'Right')
+pcorsym4 <- plotting_corr(thre_wide, 'Bottom', 'Left')
+
+pcorsymind <- plot_grid(pcorsym1, pcorsym2, pcorsym3, pcorsym4,
+                     labels = 'Symmetric task\na', 
+                     ncol = 4, hjust = 0, vjust = 1.1)
+
+
+pcorsymhv <- plot_grid(
+  plotting_corr(thre_hv, 'Horizontal', 'Vertical'),
+  labels = '\nb', hjust = 0, vjust = 1.1)
+
+
+pcorsym <- plot_grid(pcorsymind, pcorsymhv,rel_widths = c(4,1), 
+                     hjust = 0, vjust = 1)
+
+pcorasym1 <- plotting_corr(par_wide, 'Top', 'Bottom')
+pcorasym2 <- plotting_corr(par_wide, 'Right', 'Left')
+pcorasym3 <- plotting_corr(par_wide, 'Top', 'Right')
+pcorasym4 <- plotting_corr(par_wide, 'Bottom', 'Left')
+
+pcorasymind <- plot_grid(pcorasym1, pcorasym2, pcorasym3, pcorasym4,
+                        labels = 'Asymmetric task\nc', ncol = 4, 
+                        hjust = 0, vjust = 1.1)
+
+pcorasymhv <- plot_grid(
+  plotting_corr(par_hv, 'Horizontal', 'Vertical'),
+  labels = '\nd', hjust = 0, vjust = 1.1)
+
+pcorasym <- plot_grid(pcorasymind, pcorasymhv, rel_widths = c(4,1),
+                      hjust = 0, vjust = 1)
+
+pcorr <- plot_grid(pcorsym, pcorasym, ncol =1, hjust = 0, vjust =1)
+
+save_plot('figures/corr.pdf', pcorr, base_width = two_column_width,
+          base_height = 1.25 * one_column_width)
+                  
+
+                     
+         
 
 ################################################################################
 ### sym and asym comparison ####################################################
 ################################################################################
-parthre <- fitasym$par %>% filter(parn =='p1') %>% left_join(fitsym$thresholds)
 
-cor.test(parthre$par, parthre$thre)
-lm(parthre$thre~parthre$par) %>% confint()
 
-pcorcomp <- plotting_corr_comp(parthre)
+pcorcomp <- plotting_corr_comp(parthre %>% semi_join(choic_no_sign_sen_sign))
 
-save_plot('figures/corrcomp.pdf', pcorcomp, base_width = one_half_column_width,
+save_plot('figures/corrchoic_no_sign_sen_sign.pdf', pcorcomp, base_width = one_half_column_width,
           base_height = one_column_width)
 
-  
+
+
+
+
+
 
 
 

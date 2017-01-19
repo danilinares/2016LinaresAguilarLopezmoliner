@@ -21,13 +21,10 @@ plotting_bars_av <- function(d, d2, flagVertical) {
   fillbar2 <- ifelse(flagVertical,'#e41a1c','#4daf4a')
   fillbar3 <- 'white'
   
-  
-  psymbias <- ggplot(d %>% filter(vertical == flagVertical)) + 
+   ggplot(d %>% filter(vertical == flagVertical)) + 
     geom_col(aes(x = orLarge, y = thre,
                  fill = orLarge, color = orLarge, lty = orLarge),
              width=0.7, position = position_dodge(0.75)) +
-    # geom_point(aes(x = orLarge, y = thre, 
-    #             color = orLarge)) +
     geom_point(data = d2 %>% filter(vertical == flagVertical, !pred),
                aes(x = orLarge, y = thre),
                color = 'grey', shape = 21,
@@ -38,14 +35,12 @@ plotting_bars_av <- function(d, d2, flagVertical) {
     scale_fill_manual(values = c(fillbar2, fillbar1, fillbar3)) +
     scale_color_manual(values = c(fillbar2, fillbar1, fillbar1)) +
     scale_linetype_manual(values = c(1, 1, 2)) +
-    ylim(-.75, 1) +
-   # guides(lty = FALSE) +
+    ylim(-.75, 1.3) +
     labs(x = text_reference, y = 'Sign-corrected bias (deg)') +
     theme(legend.position = 'none',
           axis.line =  element_line(size = size_line),
           axis.ticks = element_line(size = size_line),
           plot.margin = margin(1, 0.5, 1, 1, 'line'))
   
-  psymbias
   
 }

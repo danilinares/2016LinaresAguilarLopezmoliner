@@ -1,0 +1,1 @@
+ttesting <- function(d1, d2) t.test(d1$thre, d2$thre, paired = TRUE)

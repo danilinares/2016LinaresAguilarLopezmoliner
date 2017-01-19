@@ -2,7 +2,7 @@ plotting_corr_comp <- function(d) {
   ggplot(data = d)+
     geom_abline(slope = 1, lty =2, size  = size_line)+
     geom_abline(slope = -1, lty =2, size  = size_line)+
-    geom_point(aes(x=par,y=thre,color=orLarge))+
+    geom_point(aes(x = par,y = thre, color=orLarge))+
     guides(shape = FALSE) +
     scale_shape_discrete(solid=F) +
     scale_colour_brewer(palette = 'Set1')+
